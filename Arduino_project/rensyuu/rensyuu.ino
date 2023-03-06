@@ -1,4 +1,4 @@
-#define REDLED7
+#define REDLED 7
 
 void setup() {
   Serial.begin(9600);
