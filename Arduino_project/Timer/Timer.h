@@ -3,7 +3,7 @@
 class Timer {
   private :
     int LOCK_TIME;
-    int  SENSOR_TIME;
+    int SENSOR_TIME;
 
 
   public :

@@ -19,11 +19,3 @@ Timer::Timer(void (*F)() ) {
 void Timer::timerSet() {
   timerAlarmEnable(timer);//timerの有効化
 }
-
-
-//使えない
-//フラグで終了させるべき
-void Timer::timerStop() {
-  timerEnd(timer);
-  timer = NULL;
-}

@@ -1,13 +1,14 @@
 //タイマー割り込み
-//処理までの秒数を引数ではなくグローバル変数で定義する
-//割り込み処理の内容はonTimer内に直接書き込む
-//違う処理をさせたい場合は別の割り込み関数を作成し、別にインスタンス化必要
+//onTimerの中に割り込み処理をする関数を書く
+//onTimerはクラス化できないのでinoファイルから動かせない
+//onTimerの中に秒数(int型)、関数のポインタのグローバル変数を入れて
+//setAndDoTimerでそれらに値をセット、実行する
 
 #include"Timer.h"
 
 //グローバル変数
-//onTimer(割り込み関数)の処理をするまでの秒数
-int second = 3;
+int second = 3;           //onTimer(割り込み関数)の処理をするまでの秒数
+void (*pfunc)();          //割り込み処理で実行する関数のポインタ
 
 //インスタンス化
 Timer timer = Timer(onTimer);
@@ -22,6 +23,12 @@ void loop() {
   timer.timerSet();
 }
 
+void setAndDoTimer(int time_s, void (*func)()) {
+  second = time_s;
+  pfunc = func;
+  timer.timerSet();
+}
+
 void onTimer() {
   timer.isrCounter++;
   //右辺に動かしたい秒数を入れる
@@ -33,7 +40,7 @@ void onTimer() {
 
     //割り込み処理
     Serial.println("hellohello");
-    
+    pfunc();
     delay(1000);
   }
 }
