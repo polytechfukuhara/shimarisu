@@ -29,7 +29,7 @@ void setAndDoTimer(int time_s, void (*func)()) {
   timer.timerSet();
 }
 
-void onTimer() {
+void IRAM_ATTR onTimer() {
   timer.isrCounter++;
   //右辺に動かしたい秒数を入れる
   if (timer.isrCounter == second) {
