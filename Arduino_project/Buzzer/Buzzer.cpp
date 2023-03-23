@@ -6,16 +6,18 @@ Buzzer::Buzzer(int num) {
 }
 
 void Buzzer::onBuzzer() {
-  tone(buzzer_pin, 262, BUZZER_TIME) ;   // ド
+  ledcWriteTone(1,262) ;   // ド
   delay(200) ;                           // 0.2秒待機
-  tone(buzzer_pin, 294, BUZZER_TIME) ;  // レ
+  ledcWriteTone(1,294) ;  // レ
   delay(200) ;                           // 0.2秒待機
-  tone(buzzer_pin, 330, BUZZER_TIME) ;   // ミ
+  ledcWriteTone(1,330) ;   // ミ
   delay(200) ;                           // 0.2秒待機
+  ledcWriteTone(1,0) ;   // ミ
+  delay(1000) ;                           // 0.2秒待機
 
 }
 
-void Buzzer::offBuzzer() {
+/*void Buzzer::offBuzzer() {
   delay(BUZZER_TIME) ;                   // 5秒待機
-  noTone(buzzer_pin);                      //ブザー停止
-}
+  //noTone(buzzer_pin);                      //ブザー停止
+}*/
