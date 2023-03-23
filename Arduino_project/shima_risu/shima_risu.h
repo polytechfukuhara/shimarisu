@@ -11,7 +11,12 @@
 */
 
 typedef enum {
-  INIT_MODE,
+  INIT_MODE = 0,
   LOCK_MODE,
   OPEN_MODE,
 } MODE;
+
+typedef enum {
+  SENSOR_ACTION,
+  LOCK_ACTION
+} ACTION;
