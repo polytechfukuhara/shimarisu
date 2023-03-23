@@ -7,11 +7,13 @@
 #include"Timer.h"
 
 //グローバル変数
-int second = 3;           //onTimer(割り込み関数)の処理をするまでの秒数
-void (*pfunc)();          //割り込み処理で実行する関数のポインタ
+int secondSensor = 3;           //onTimer(割り込み関数)の処理をするまでの秒数
+int secondLock = 4;
+boolean flag = true;
 
 //インスタンス化
-Timer timer = Timer(onTimer);
+Timer timerSensor = Timer(onTimerSensor);
+Timer timerLock = Timer(onTimerLock);
 
 void setup() {
   // put your setup code here, to run once:
@@ -20,27 +22,42 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  timer.timerSet();
+  if (flag) {
+    timerSensor.timerSet();
+  } else {
+    timerLock.timerSet();
+  }
+
+  flag = !flag;
 }
 
-void setAndDoTimer(int time_s, void (*func)()) {
-  second = time_s;
-  pfunc = func;
-  timer.timerSet();
-}
 
-void IRAM_ATTR onTimer() {
-  timer.isrCounter++;
+void onTimerSensor() {
+  timerSensor.isrCounter++;
   //右辺に動かしたい秒数を入れる
-  if (timer.isrCounter == second) {
+  if (timerSensor.isrCounter == secondSensor) {
 
-    timerEnd(timer.timer);
-    timer.timer = NULL;
-    timer.isrCounter = 0;
+    timerEnd(timerSensor.timer);
+    timerSensor.timer = NULL;
+    timerSensor.isrCounter = 0;
 
     //割り込み処理
-    Serial.println("hellohello");
-    pfunc();
+    Serial.println("Sensor");
+    delay(1000);
+  }
+}
+
+void onTimerLock() {
+  timerLock.isrCounter++;
+  //右辺に動かしたい秒数を入れる
+  if (timerLock.isrCounter == secondLock) {
+
+    timerEnd(timerLock.timer);
+    timerLock.timer = NULL;
+    timerLock.isrCounter = 0;
+
+    //割り込み処理
+    Serial.println("Lock");
     delay(1000);
   }
 }
