@@ -12,9 +12,11 @@ Lock::Lock(int servo_pin) {
 }
 
 void Lock::openServo() {
+  servo.attach(m_servo_pin);
   servo.write(0);
 }
 
 void Lock::lockServo() {
+  servo.attach(m_servo_pin);
   servo.write(90);
 }

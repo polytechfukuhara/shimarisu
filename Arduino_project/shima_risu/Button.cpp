@@ -7,10 +7,8 @@ Button::Button(int num) {
 }
 
 bool Button::buttonRead() {
-  bool flg = false;
   if (digitalRead(button_pin) == HIGH) {
-    flg = true;
-
+  return true;
   }
-  return flg;
+  return false;
 }

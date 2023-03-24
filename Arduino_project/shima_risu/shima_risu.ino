@@ -3,24 +3,15 @@
 #include "Lock.h"
 #include "Button.h"
 #include "Led.h"
-#include "Timer.h"
+//#include "Timer.h"
 #include <SPI.h>
 #include "MFRC522_I2C.h"
 #include <Wire.h>
 #include <dummy.h>
 #include <BluetoothSerial.h>
-
 #include <esp_now.h>
 #include <WiFi.h>
 #include <esp_wifi.h>  // only for esp_wifi_set_channel()
-// Global copy of slave
-esp_now_peer_info_t slave;
-#define CHANNEL 1           //wi-fiのチャンネル　子機と合わせる
-#define PRINTSCANRESULTS 0  //スキャン結果の表示　1：表示　0：非表示
-#define DELETEBEFOREPAIR 0  //ペアリング前のスレーブ削除
-#define OPEN_SENDDATA 0              //sendData()に引数として渡す
-#define LOCK_SENDDATA 1              //sendData()に引数として渡す
-
 
 
 //ピン番号
@@ -36,6 +27,14 @@ esp_now_peer_info_t slave;
 //I2C通信アドレス
 #define RFID_ADDR 0x28
 
+//ESPNOW
+#define CHANNEL 1           //wi-fiのチャンネル　子機と合わせる
+#define PRINTSCANRESULTS 0  //スキャン結果の表示　1：表示　0：非表示
+#define DELETEBEFOREPAIR 0  //ペアリング前のスレーブ削除
+#define OPEN_SENDDATA 0     //sendData()に引数として渡す
+#define LOCK_SENDDATA 1     //sendData()に引数として渡す
+#define BUZZER_SENDDATA 2   //sendData()に引数として渡す
+
 
 //グローバル変数
 int secondSensor = 3;  //onTimer(割り込み関数)の処理をするまでの秒数
@@ -43,6 +42,7 @@ int secondLock = 4;
 boolean flag = true;
 MODE g_mode = INIT_MODE;
 ACTION g_action = SENSOR_ACTION;
+esp_now_peer_info_t slave;
 
 
 //インスタンス化
@@ -51,8 +51,8 @@ Sensor sensor = Sensor(ECHO_PIN, TRIG_PIN);
 Button btn = Button(BUTTON_PIN);
 Led ledRed = Led(RED_PIN);
 Led ledGreen = Led(GREEN_PIN);
-Timer timerSensor = Timer(onTimerSensor);
-Timer timerLock = Timer(onTimerLock);
+//Timer timerSensor = Timer(onTimerSensor);
+//Timer timerLock = Timer(onTimerLock);
 MFRC522_I2C mfrc522(RFID_ADDR, SCL_PIN);
 BluetoothSerial SerialBT;
 
@@ -60,11 +60,12 @@ BluetoothSerial SerialBT;
 void setup() {
   Wire.begin();
   Serial.begin(115200);
-  SerialBT.begin(F("ESP32_SHIMARISU"));  //Bluetooth device name
+  SerialBT.begin(F("ESP32_SHIMARISU_SE20"));  //Bluetooth device name
   Serial.println(F("The device started, now you can pair it with bluetooth!"));
   mfrc522.PCD_Init();
   delay(4);
 
+  //BluetoothのMacAddressをSerial表示
   uint8_t mac5[6];
   esp_read_mac(mac5, ESP_MAC_BT);
   Serial.print(F("[Bluetooth] Mac Address = "));
@@ -81,7 +82,7 @@ void setup() {
   Serial.print(mac5[5]);
   Serial.print(F("\r\n"));
 
-
+  //ESPNOW
   WiFi.mode(WIFI_STA);
   esp_wifi_set_channel(CHANNEL, WIFI_SECOND_CHAN_NONE);
   Serial.println("ESPNow/Basic/Master Example");
@@ -95,63 +96,89 @@ void setup() {
 
 
 void loop() {
-  Serial.println("loop");
-  Serial.println(getMode());
   switch (g_mode) {
-      
+
     case INIT_MODE:
-    Serial.println("INIT_MODE");
+      Serial.println("INIT_MODE");
+
       lock.openServo();
       ledRed.ledOff();
       ledGreen.ledOn();
       setMode(OPEN_MODE);
+      delay(500);
       break;
 
     case OPEN_MODE:
-    Serial.println("OPEN_MODE");
-      ledRed.ledOff();
-      ledGreen.ledOn();
+      Serial.println("OPEN_MODE");
+
       if (btn.buttonRead()) {
-        lock.lockServo();
-        setMode(LOCK_MODE);
+        Serial.println("BUTTON_PUSHED");
+        setMode(OPEN_TO_LOCK_MODE);
+        delay(500);
         break;
       }
-      switch (getAction()) {
+
+      switch (g_action) {
         case SENSOR_ACTION:
-        Serial.println("SENSOR_ACTION");
-          timerSensor.timerSet();
+          Serial.println("SENSOR_ACTION");
+
+          if (sensor.checkIsInside()) {
+            setAction(LOCK_ACTION);
+            delay(5000);
+          }
+          delay(500);
           break;
 
         case LOCK_ACTION:
-        Serial.println("LOCK_ACTION");
-          timerLock.timerSet();
-          setMode(LOCK_MODE);
-          setAction(SENSOR_ACTION);
+          Serial.println("LOCK_ACTION");
+
+          setMode(OPEN_TO_LOCK_MODE);
+          delay(500);
           break;
       }
+      break;
 
-    case LOCK_MODE:
-    Serial.println("LOCK_MODE");
+    case OPEN_TO_LOCK_MODE:
+      Serial.println("OPEN_TO_LOCK_MODE");
+
+      lock.lockServo();
       ledRed.ledOn();
       ledGreen.ledOff();
+      setAction(SENSOR_ACTION);
+      setMode(LOCK_MODE);
 
       ScanForSlave();
       if (slave.channel == CHANNEL) {  // check if slave channel is defined
         bool isPaired = manageSlave();
         if (isPaired) {
+          sendData(BUZZER_SENDDATA);
           sendData(LOCK_SENDDATA);
         } else {
           Serial.println("Slave pair failed!");
         }
       }
-      
+      break;
+
+    case LOCK_MODE:
+      Serial.println("LOCK_MODE");
 
       if (!(ICRead()) && !(BTRead())) {
+        delay(500);
+        break;
+      } else {
+        setMode(LOCK_TO_OPEN_MODE);
+        delay(500);
         break;
       }
 
+    case LOCK_TO_OPEN_MODE:
+      Serial.println("LOCK_TO_OPEN_MODE");
+      
       lock.openServo();
+      ledRed.ledOff();
+      ledGreen.ledOn();
       setMode(OPEN_MODE);
+      
       ScanForSlave();
       if (slave.channel == CHANNEL) {  // check if slave channel is defined
         bool isPaired = manageSlave();
@@ -161,7 +188,6 @@ void loop() {
           Serial.println("Slave pair failed!");
         }
       }
-      delay(3000);
       break;
   }
 }
@@ -195,17 +221,16 @@ boolean ICRead() {
     Serial.println(F("読み込みました"));
     String hexString = convertHex(mfrc522.uid.uidByte, mfrc522.uid.size);
     Serial.println(hexString);
-    if (hexString.equals("02e864d1500a70")) {  //ナカモトの楽天カード
-      isReadRFID = true;
-      delay(1000);
-    }
+    isReadRFID = true;
+    delay(1000);
   }
+  Serial.print("isReadRFID : ");
+  Serial.println(isReadRFID);
   return isReadRFID;
 }
 
 
 boolean BTRead() {
-  boolean isReadBT = false;
   if (SerialBT.available()) {
     String buf = SerialBT.readStringUntil('\0');
 
@@ -213,10 +238,10 @@ boolean BTRead() {
     Serial.println(buf);
 
     if (buf == "open") {
-      isReadBT = true;
+      return true;
     }
   }
-  return isReadBT;
+  return false;
 }
 
 
@@ -231,8 +256,8 @@ String convertHex(byte *buffer, byte bufferSize) {
   return hexstring;
 }
 
-
-void onTimerSensor() {
+/*
+  void onTimerSensor() {
   timerSensor.isrCounter++;
   //右辺に動かしたい秒数を入れる
   if (timerSensor.isrCounter == secondSensor) {
@@ -242,16 +267,15 @@ void onTimerSensor() {
     timerSensor.isrCounter = 0;
 
     //割り込み処理
-    Serial.println(F("Sensor"));
     if (sensor.checkIsInside()) {
       setAction(LOCK_ACTION);
     }
     delay(1000);
   }
-}
+  }
 
 
-void onTimerLock() {
+  void onTimerLock() {
   timerLock.isrCounter++;
   //右辺に動かしたい秒数を入れる
   if (timerLock.isrCounter == secondLock) {
@@ -261,12 +285,11 @@ void onTimerLock() {
     timerLock.isrCounter = 0;
 
     //割り込み処理
-    Serial.println(F("Lock"));
     lock.lockServo();
     delay(1000);
   }
-}
-
+  }
+*/
 
 // Init ESP Now with fallback
 void InitESPNow() {  //esp-nowの初期化処理

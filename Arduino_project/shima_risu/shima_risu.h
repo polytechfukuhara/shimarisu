@@ -12,8 +12,11 @@
 
 typedef enum {
   INIT_MODE = 0,
-  LOCK_MODE,
   OPEN_MODE,
+  LOCK_MODE,
+  OPEN_TO_LOCK_MODE,
+  LOCK_TO_OPEN_MODE
+  
 } MODE;
 
 typedef enum {
