@@ -16,9 +16,28 @@ void setup() {
 }
 
 void loop() {
-  if (ICRead()) {
-    Serial.println("解錠します");
+//  if (ICRead()) {
+//    Serial.println("解錠します");
+//  }
+
+  if (!mfrc522.PICC_IsNewCardPresent()) {
+    Serial.println("カードがありません");
+    delay(500);
+    
+  } else if (!mfrc522.PICC_ReadCardSerial()) {
+    Serial.println("読めませんでした");
+    delay(500);
+
+  } else {
+    Serial.println("読み込みました");
+    String hexString = convertHex(mfrc522.uid.uidByte, mfrc522.uid.size);
+    Serial.println(hexString);
+    if (hexString.equals("02e864d1500a70")) {//ナカモトの楽天カード
+      
+      delay (1000);
+    }
   }
+  
 }
 
 
