@@ -10,6 +10,22 @@
 BluetoothSerial SerialBT;
 
 
+//関数
+boolean BTRead() {
+  if (SerialBT.available()) {
+    String buf = SerialBT.readStringUntil('\0');
+
+    Serial.print("buf:");
+    Serial.println(buf);
+
+    if (buf == "open") {
+      return true;
+    }
+  }
+  return false;
+}
+
+
 void setup() {
   Serial.begin(115200);
   SerialBT.begin("ESP32_SHIMARISU"); //Bluetooth device name
@@ -22,27 +38,23 @@ void setup() {
 
 void loop() {
 
-  while (SerialBT.available()) {
-    String buf = SerialBT.readStringUntil('\0');
+  Serial.print("BTRead()");
+  Serial.println(BTRead());
+  delay(100);
 
-    Serial.print("buf:");
-    Serial.println(buf);
-
-    /*
-        if(buf.substring(0,3).equals("LED")){
-          int interval_tmp = buf.substring(3).toInt();
-          if(0 < interval_tmp && interval_tmp < 4){
-            led_interval = interval_tmp;
-            TimerLib.setInterval_s(led_blink, led_interval);
-            SerialBT.print("LED blinks for " + String(led_interval) + " sec");
-          }
-        }else if(buf.substring(0,3).equals("OFF")){
-          TimerLib.clearTimer();
-          SerialBT.print("OFF");
-          digitalWrite(LED_PIN, LOW);
+  /*
+      if(buf.substring(0,3).equals("LED")){
+        int interval_tmp = buf.substring(3).toInt();
+        if(0 < interval_tmp && interval_tmp < 4){
+          led_interval = interval_tmp;
+          TimerLib.setInterval_s(led_blink, led_interval);
+          SerialBT.print("LED blinks for " + String(led_interval) + " sec");
         }
-    */
-
-  }
+      }else if(buf.substring(0,3).equals("OFF")){
+        TimerLib.clearTimer();
+        SerialBT.print("OFF");
+        digitalWrite(LED_PIN, LOW);
+      }
+  */
 
 }
