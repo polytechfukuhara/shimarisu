@@ -105,7 +105,6 @@ void loop() {
       ledRed.ledOff();
       ledGreen.ledOn();
       setMode(OPEN_MODE);
-      delay(500);
       break;
 
     case OPEN_MODE:
@@ -114,7 +113,7 @@ void loop() {
       if (btn.buttonRead()) {
         Serial.println("BUTTON_PUSHED");
         setMode(OPEN_TO_LOCK_MODE);
-        delay(500);
+        delay(50);
         break;
       }
 
@@ -126,14 +125,13 @@ void loop() {
             setAction(LOCK_ACTION);
             delay(5000);
           }
-          delay(500);
+          delay(50);
           break;
 
         case LOCK_ACTION:
           Serial.println("LOCK_ACTION");
 
           setMode(OPEN_TO_LOCK_MODE);
-          delay(500);
           break;
       }
       break;
@@ -142,6 +140,7 @@ void loop() {
       Serial.println("OPEN_TO_LOCK_MODE");
 
       lock.lockServo();
+      delay(1000);
       ledRed.ledOn();
       ledGreen.ledOff();
       setAction(SENSOR_ACTION);
@@ -152,22 +151,31 @@ void loop() {
         bool isPaired = manageSlave();
         if (isPaired) {
           sendData(BUZZER_SENDDATA);
+        } else {
+          Serial.println("Slave pair failed!");
+        }
+      }
+
+      /*
+      ScanForSlave();
+      if (slave.channel == CHANNEL) {
+        bool isPaired = manageSlave();
+        if (isPaired) {
           sendData(LOCK_SENDDATA);
         } else {
           Serial.println("Slave pair failed!");
         }
       }
+      */
       break;
 
     case LOCK_MODE:
       Serial.println("LOCK_MODE");
 
       if (!(ICRead()) && !(BTRead())) {
-        delay(500);
         break;
       } else {
         setMode(LOCK_TO_OPEN_MODE);
-        delay(500);
         break;
       }
 
@@ -175,6 +183,7 @@ void loop() {
       Serial.println("LOCK_TO_OPEN_MODE");
       
       lock.openServo();
+      delay(1000);
       ledRed.ledOff();
       ledGreen.ledOn();
       setMode(OPEN_MODE);

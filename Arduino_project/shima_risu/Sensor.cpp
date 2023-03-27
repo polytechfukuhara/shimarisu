@@ -21,6 +21,7 @@ double Sensor::read_distance() {
 bool Sensor::checkIsInside() {
   double distance;
   distance = read_distance();
+  Serial.println(distance);
   if ( 0 < distance && distance < boxLength) {
     return true;
   }
